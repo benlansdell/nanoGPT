@@ -17,6 +17,7 @@ $ torchrun --nproc_per_node=8 --nnodes=2 --node_rank=1 --master_addr=123.456.123
 """
 
 import os
+from glob import glob
 import time
 import math
 import pickle
@@ -27,12 +28,12 @@ import torch
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.distributed import init_process_group, destroy_process_group
 
-from model import GPTConfig, GPT
+from model import GPTConfig, GPT, GPTWSI
 
 # -----------------------------------------------------------------------------
 # default config values designed to train a gpt2 (124M) on OpenWebText
 # I/O
-out_dir = 'out'
+out_dir = 'wsi_out'
 eval_interval = 2000
 log_interval = 1
 eval_iters = 200
@@ -104,15 +105,64 @@ device_type = 'cuda' if 'cuda' in device else 'cpu' # for later use in torch.aut
 ptdtype = {'float32': torch.float32, 'bfloat16': torch.bfloat16, 'float16': torch.float16}[dtype]
 ctx = nullcontext() if device_type == 'cpu' else torch.amp.autocast(device_type=device_type, dtype=ptdtype)
 
+# Character level dataset
 # poor man's data loader
-data_dir = os.path.join('data', dataset)
-train_data = np.memmap(os.path.join(data_dir, 'train.bin'), dtype=np.uint16, mode='r')
-val_data = np.memmap(os.path.join(data_dir, 'val.bin'), dtype=np.uint16, mode='r')
+# data_dir = os.path.join('data', dataset)
+# train_data = np.memmap(os.path.join(data_dir, 'train.bin'), dtype=np.uint16, mode='r')
+# val_data = np.memmap(os.path.join(data_dir, 'val.bin'), dtype=np.uint16, mode='r')
+
+# def get_batch(split):
+#     data = train_data if split == 'train' else val_data
+#     ix = torch.randint(len(data) - block_size, (batch_size,))
+#     x = torch.stack([torch.from_numpy((data[i:i+block_size]).astype(np.int64)) for i in ix])
+#     y = torch.stack([torch.from_numpy((data[i+1:i+1+block_size]).astype(np.int64)) for i in ix])
+#     if device_type == 'cuda':
+#         # pin arrays x,y, which allows us to move them to GPU asynchronously (non_blocking=True)
+#         x, y = x.pin_memory().to(device, non_blocking=True), y.pin_memory().to(device, non_blocking=True)
+#     else:
+#         x, y = x.to(device), y.to(device)
+#     return x, y
+
+# WSI features
+dataset = 'simclr-ciga512_10'
+data_dir = os.path.join('/data/comet-histology-ssl-features', dataset)
+val_data_dir = data_dir + '_val'
+
+#Load all .pt files, and concat them into features dict and labels list
+def load_wsi_features(data_dir):
+    files = glob(os.path.join(data_dir, '*.pt'))
+    slides_labels = []
+    features = {}
+    for file in files:
+        data = torch.load(file)
+        slide = os.path.basename(file).split('.')[0]
+        label = np.unique(data['labels'])[0]
+        slides_labels.append((slide, label))
+        features[slide] = data['features']
+    slides_labels = np.array(slides_labels)
+    len_features = {k:len(features[k]) for k in features.keys()}
+    return features, slides_labels, len(slides_labels), len_features
+
+train_data = load_wsi_features(data_dir)
+val_data = load_wsi_features(val_data_dir)
+
+#This will randomly choose a set of slides (batch_size)
+# and return a random selection of (block_size) patches for each element
+# x = (batch_size x block_size x feature_dim)
+# y = (batch_size x 1)
 def get_batch(split):
     data = train_data if split == 'train' else val_data
-    ix = torch.randint(len(data) - block_size, (batch_size,))
-    x = torch.stack([torch.from_numpy((data[i:i+block_size]).astype(np.int64)) for i in ix])
-    y = torch.stack([torch.from_numpy((data[i+1:i+1+block_size]).astype(np.int64)) for i in ix])
+    features, slides_labels, n_slides, len_features = data
+
+    #Randomly choose set of slides
+    n_slides = len(slides_labels)
+    batch_indices = np.random.choice(n_slides, size = batch_size, replace = True)
+    slides = [s[0] for s in slides_labels[batch_indices]]
+    labels = [s[1] for s in slides_labels[batch_indices]]
+    sample_indices = [np.random.choice(len_features[s], size = block_size, replace = True) for s in slides]
+    x = torch.stack([torch.from_numpy(features[s][sample_indices[idx],:]) for idx, s in enumerate(slides)])
+    y = torch.from_numpy(np.array(labels, dtype = np.int64))
+
     if device_type == 'cuda':
         # pin arrays x,y, which allows us to move them to GPU asynchronously (non_blocking=True)
         x, y = x.pin_memory().to(device, non_blocking=True), y.pin_memory().to(device, non_blocking=True)
@@ -144,7 +194,7 @@ if init_from == 'scratch':
         print("defaulting to vocab_size of GPT-2 to 50304 (50257 rounded up for efficiency)")
     model_args['vocab_size'] = meta_vocab_size if meta_vocab_size is not None else 50304
     gptconf = GPTConfig(**model_args)
-    model = GPT(gptconf)
+    model = GPTWSI(gptconf)
 elif init_from == 'resume':
     print(f"Resuming training from {out_dir}")
     # resume training from a checkpoint.
@@ -157,7 +207,7 @@ elif init_from == 'resume':
         model_args[k] = checkpoint_model_args[k]
     # create the model
     gptconf = GPTConfig(**model_args)
-    model = GPT(gptconf)
+    model = GPTWSI(gptconf)
     state_dict = checkpoint['model']
     # fix the keys of the state dictionary :(
     # honestly no idea how checkpoints sometimes get this prefix, have to debug more
