@@ -1,0 +1,33 @@
+[user]
+        email = ben.lansdell@stjude.org
+        name = benlansdell
+
+[alias]
+ls = log --pretty=format:"%C(yellow)%h%Cred%d\\ %Creset%s%Cblue\\ [%cn]" --decorate
+ll = log --pretty=format:"%C(yellow)%h%Cred%d\\ %Creset%s%Cblue\\ [%cn]" --decorate --numstat
+co = checkout
+lg = log --graph --pretty=format:'%Cred%h%Creset %ad %s %C(yellow)%d%Creset %C(bold blue)<%an>%Creset' --date=short
+hs = log --graph --full-history --all --pretty=format:'%Cred%h%Creset %ad %s %C(yellow)%d%Creset %C(bold blue)<%an>%Creset' --date=short
+ad = add
+ci = commit
+st = status
+br = branch
+di = diff
+ps = push origin master
+pl = pull origin master
+type = cat-file -t
+dump = cat-file -p
+filelog = log -u
+fl = log -u
+[push]  
+        default = simple
+[color] 
+        ui = true
+[credential]
+        helper = cache --timeout=3600
+
+[filter "lfs"]
+        clean = git-lfs clean -- %f
+        smudge = git-lfs smudge -- %f
+        required = true
+        process = git-lfs filter-process

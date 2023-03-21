@@ -1,0 +1,8 @@
+# cnvrg ignore: Ignore the following directories and files
+# for example:
+# some_dir/
+# some_file.txt
+.git*
+.gitignore
+*.conflict
+*.deleted
