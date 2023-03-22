@@ -430,6 +430,8 @@ class GPTWSI(nn.Module):
         for block in self.transformer.h:
             x = block(x)
         x = self.transformer.ln_f(x)
+        #Take last token... TODO this can be changed to be more BERT-like. E.g. get rid of causal attention
+        x = x[:,-1,:]
 
         if targets is not None:
             # if we are given some desired targets also calculate the loss
@@ -437,7 +439,7 @@ class GPTWSI(nn.Module):
             loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1), ignore_index=-1)
         else:
             # inference-time mini-optimization: only forward the lm_head on the very last position
-            logits = self.lm_head(x[:, [-1], :]) # note: using list [-1] to preserve the time dim
+            logits = self.lm_head(x) # note: using list [-1] to preserve the time dim
             loss = None
 
         return logits, loss
