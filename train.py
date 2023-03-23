@@ -158,6 +158,8 @@ val_data = load_wsi_features(val_data_dir)
 def get_batch(split):
     data = train_data if split == 'train' else val_data
     features, slides_labels, n_slides, len_features = data
+    
+    #print(n_slides)
 
     #Randomly choose set of slides
     n_slides = len(slides_labels)
