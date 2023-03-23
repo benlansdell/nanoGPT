@@ -159,7 +159,7 @@ def get_batch(split):
     data = train_data if split == 'train' else val_data
     features, slides_labels, n_slides, len_features = data
     
-    #print(n_slides)
+    assert n_slides > 0, f"No slides found in {split}, did the dataset load correctly?"
 
     #Randomly choose set of slides
     n_slides = len(slides_labels)

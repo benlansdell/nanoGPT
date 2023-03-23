@@ -1,0 +1,6 @@
+torch==2.0.0
+transformers
+datasets
+tiktoken
+wandb
+tqdm
