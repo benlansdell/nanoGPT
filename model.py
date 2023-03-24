@@ -381,7 +381,7 @@ class GPTWSI(nn.Module):
             h = nn.ModuleList([Block(config) for _ in range(config.n_layer)]),
             ln_f = LayerNorm(config.n_embd, bias=config.bias),
         ))
-        self.lm_head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
+        self.lm_head = nn.Linear(config.n_embd*config.block_size, config.vocab_size, bias=False)
         #BL: Take this out... we have not wte, so no weight tying
         # with weight tying when using torch.compile() some warnings get generated:
         # "UserWarning: functional_call was passed multiple values for tied weights.
@@ -431,7 +431,8 @@ class GPTWSI(nn.Module):
             x = block(x)
         x = self.transformer.ln_f(x)
         #Take last token... TODO this can be changed to be more BERT-like. E.g. get rid of causal attention
-        x = x[:,-1,:]
+        #x = x[:,-1,:]
+        x = torch.flatten(x)
 
         if targets is not None:
             # if we are given some desired targets also calculate the loss
