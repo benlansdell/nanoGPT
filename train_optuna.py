@@ -476,5 +476,10 @@ if __name__ == "__main__":
         for key, value in trial.params.items():
             print("    {}: {}".format(key, value))
 
+        cmd = f"git add {study_name}.db; git commit -m 'Update repo'; git push origin"
+        print("Sync db with git repo:")
+        print(cmd)
+        os.system(cmd)
+
     if ddp:
         destroy_process_group()
