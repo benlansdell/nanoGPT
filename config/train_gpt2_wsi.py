@@ -9,7 +9,7 @@ wandb_run_name = 'mini-gpt'
 # these make the total batch size be ~0.5M
 # 12 batch size * 1024 block size * 5 gradaccum * 8 GPUs = 491,520
 batch_size = 32 #Number of slides to randomly choose
-block_size = 256 #Number of patches from each slide to randomly choose
+block_size = 128 #Number of patches from each slide to randomly choose
 gradient_accumulation_steps = 5
 
 #Number of disease types we're classifying
@@ -19,13 +19,13 @@ n_classes = 17
 n_layer = 6
 n_head = 8
 n_embd = 512
-dropout = 0.2
+dropout = 0.
 
 learning_rate = 1e-4 # with baby networks can afford to go a bit higher
 max_iters = 5000
 lr_decay_iters = 5000 # make equal to max_iters usually
 min_lr = 1e-5 # learning_rate / 10 usually
-beta2 = 0.99 # make a bit bigger because number of tokens per iter is small
+beta2 = 0.95
 
 warmup_iters = 100 # not super necessary potentially
 

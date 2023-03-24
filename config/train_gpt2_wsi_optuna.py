@@ -6,20 +6,6 @@ wandb_log = False
 wandb_project = 'hande'
 wandb_run_name = 'mini-gpt'
 
-#simple parameters
-optuna_search
-block_size
-n_layer
-dropout
-weight decay
-learning rate
-n_head
-
-#Params that require changes to model
-architecture
-number of linear layers at end
-flatten, or take mean over middle layer to get pre-activation layer
-
 # these make the total batch size be ~0.5M
 # 12 batch size * 1024 block size * 5 gradaccum * 8 GPUs = 491,520
 batch_size = 32 #Number of slides to randomly choose
