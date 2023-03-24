@@ -22,8 +22,8 @@ n_embd = 512
 dropout = 0.
 
 learning_rate = 1e-4 # with baby networks can afford to go a bit higher
-max_iters = 5000
-lr_decay_iters = 5000 # make equal to max_iters usually
+max_iters = 10000
+lr_decay_iters = 10000 # make equal to max_iters usually
 min_lr = 1e-5 # learning_rate / 10 usually
 beta2 = 0.95
 
@@ -34,7 +34,7 @@ dataset = 'simclr-ciga512_10'
 #Eval stuff
 eval_interval = 100 # keep frequent because we'll overfit
 eval_iters = 200
-log_interval = 10 # don't print too too often
+log_interval = 100 # don't print too too often
 
 # weight decay
 weight_decay = 1e-1

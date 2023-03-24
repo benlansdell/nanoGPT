@@ -24,6 +24,7 @@ import pickle
 from contextlib import nullcontext
 
 import optuna #For running param search
+from optuna.trial import TrialState
 import mlflow #For logging results
 remote_server_uri = "http://dnb2.stjude.org:5678"
 
@@ -32,7 +33,7 @@ import torch
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.distributed import init_process_group, destroy_process_group
 
-from model import GPTConfig, GPT, GPTWSI
+from model import GPTConfig, GPTWSI
 
 # -----------------------------------------------------------------------------
 # default config values designed to train a gpt2 (124M) on OpenWebText
@@ -82,6 +83,7 @@ compile = True # use PyTorch 2.0 to compile the model to be faster
 #BL
 n_classes = 17
 search_id = 1
+n_trials = 1
 
 # -----------------------------------------------------------------------------
 config_keys = [k for k,v in globals().items() if not k.startswith('_') and isinstance(v, (int, float, bool, str))]
@@ -441,10 +443,12 @@ if __name__ == "__main__":
     study_name = f'{dataset}_{search_id}'
     storage_name = "sqlite:///{}.db".format(study_name)
 
-    n_trials = 2
     study = None
-    if ddp_rank == 0:
-        study = optuna.create_study(direction="maximize", study_name = study_name, storage = storage_name)
+    if master_process:
+        study = optuna.create_study(direction="maximize", 
+                                    study_name = study_name, 
+                                    storage = storage_name,
+                                    load_if_exists = True)
         study.optimize(objective, n_trials=n_trials)
     else:
         for _ in range(n_trials):
@@ -453,7 +457,7 @@ if __name__ == "__main__":
             except optuna.TrialPruned:
                 pass
 
-    if ddp_rank == 0:
+    if master_process:
         assert study is not None
         pruned_trials = study.get_trials(deepcopy=False, states=[TrialState.PRUNED])
         complete_trials = study.get_trials(deepcopy=False, states=[TrialState.COMPLETE])
