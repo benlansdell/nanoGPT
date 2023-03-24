@@ -38,7 +38,7 @@ eval_interval = 2000
 log_interval = 1
 eval_iters = 200
 eval_only = False # if True, script exits right after the first eval
-always_save_checkpoint = True # if True, always save a checkpoint after each eval
+always_save_checkpoint = False # if True, always save a checkpoint after each eval
 init_from = 'scratch' # 'scratch' or 'resume' or 'gpt2*'
 # wandb logging
 wandb_log = False # disabled by default
@@ -102,6 +102,14 @@ else:
 
 if master_process:
     os.makedirs(out_dir, exist_ok=True)
+    runs = [os.path.basename(x) for x in glob(os.path.join(out_dir, '*_ckpt.pt'))]
+    if runs:
+        max_run = max([int(x.split('_')[1]) for x in runs])
+        run_no = max_run + 1
+    else:
+        run_no = 0
+    out_file = os.path.join(out_dir, f'run_{run_no}_ckpt.pt')
+
 torch.manual_seed(1337 + seed_offset)
 torch.backends.cuda.matmul.allow_tf32 = True # allow tf32 on matmul
 torch.backends.cudnn.allow_tf32 = True # allow tf32 on cudnn
@@ -294,6 +302,8 @@ t0 = time.time()
 local_iter_num = 0 # number of iterations in the lifetime of this process
 raw_model = model.module if ddp else model # unwrap DDP container if needed
 running_mfu = -1.0
+if master_process:
+    start_time = time.time()
 while True:
 
     # determine and set the learning rate for this iteration
@@ -325,7 +335,7 @@ while True:
                     'config': config,
                 }
                 print(f"saving checkpoint to {out_dir}")
-                torch.save(checkpoint, os.path.join(out_dir, 'ckpt.pt'))
+                torch.save(checkpoint, out_file)
     if iter_num == 0 and eval_only:
         break
 
@@ -371,5 +381,11 @@ while True:
     if iter_num > max_iters:
         break
 
+if master_process:
+    duration = time.time() - start_time
+    print("Training time:", duration)
+    print('best val acc', best_val_acc)
+
 if ddp:
     destroy_process_group()
+

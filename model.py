@@ -121,6 +121,8 @@ class GPTConfig:
     n_embd: int = 768
     dropout: float = 0.0
     bias: bool = True # True: bias in Linears and LayerNorms, like GPT-2. False: a bit better and faster
+    n_linear_layers: int = 1
+    mean_or_flatten: str = 'flatten'
 
 class GPT(nn.Module):
 
@@ -389,6 +391,13 @@ class GPTWSI(nn.Module):
         # not 100% sure what this is, so far seems to be harmless. TODO investigate
         #self.transformer.wte.weight = self.lm_head.weight # https://paperswithcode.com/method/weight-tying
 
+        if self.config.mean_or_flatten == 'mean':
+            self.flat_op = torch.mean
+            self.flat_kwargs = {'dim': 1}
+        else:
+            self.flat_op = torch.flatten
+            self.flat_kwargs = {'start_dim': 1}
+
         # init all weights
         self.apply(self._init_weights)
         # apply special scaled init to the residual projections, per GPT-2 paper
@@ -430,9 +439,10 @@ class GPTWSI(nn.Module):
         for block in self.transformer.h:
             x = block(x)
         x = self.transformer.ln_f(x)
-        #Take last token... TODO this can be changed to be more BERT-like. E.g. get rid of causal attention
-        #x = x[:,-1,:]
-        x = torch.flatten(x, start_dim = 1)
+
+        x = self.flat_op(x, **self.flat_kwargs)
+        #x = torch.flatten(x, start_dim = 1)
+        #x = torch.mean(x, dim = 1)
 
         if targets is not None:
             # if we are given some desired targets also calculate the loss

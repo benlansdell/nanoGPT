@@ -5,3 +5,5 @@ tiktoken
 wandb
 tqdm
 optuna
+mlflow
+protobuf==3.20.0
