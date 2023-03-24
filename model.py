@@ -432,7 +432,7 @@ class GPTWSI(nn.Module):
         x = self.transformer.ln_f(x)
         #Take last token... TODO this can be changed to be more BERT-like. E.g. get rid of causal attention
         #x = x[:,-1,:]
-        x = torch.flatten(x)
+        x = torch.flatten(x, start_dim = 1)
 
         if targets is not None:
             # if we are given some desired targets also calculate the loss
