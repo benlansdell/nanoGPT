@@ -23,7 +23,9 @@ import math
 import pickle
 from contextlib import nullcontext
 
-import optuna
+import optuna #For running param search
+import mlflow #For logging results
+remote_server_uri = "http://dnb2.stjude.org:5678"
 
 import numpy as np
 import torch
@@ -79,6 +81,10 @@ compile = True # use PyTorch 2.0 to compile the model to be faster
 
 #BL
 n_classes = 17
+
+mlflow.set_tracking_uri(remote_server_uri)
+expt_name = 'train' + a.model_name + '_dev'
+mlflow.set_experiment(expt_name)
 
 # -----------------------------------------------------------------------------
 config_keys = [k for k,v in globals().items() if not k.startswith('_') and isinstance(v, (int, float, bool, str))]
