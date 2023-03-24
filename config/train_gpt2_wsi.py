@@ -7,7 +7,7 @@ wandb_project = 'hande'
 wandb_run_name = 'mini-gpt'
 
 # these make the total batch size be ~0.5M
-# 12 batch size * 1024 block size * 5 gradaccum * 8 GPUs = 491,520
+# 32 batch size * 5 gradaccum * 4 GPUs = 6400
 batch_size = 32 #Number of slides to randomly choose
 block_size = 128 #Number of patches from each slide to randomly choose
 gradient_accumulation_steps = 5
@@ -22,8 +22,8 @@ n_embd = 512
 dropout = 0.
 
 learning_rate = 1e-4 # with baby networks can afford to go a bit higher
-max_iters = 5000
-lr_decay_iters = 5000 # make equal to max_iters usually
+max_iters = 10000
+lr_decay_iters = 10000 # make equal to max_iters usually
 min_lr = 1e-5 # learning_rate / 10 usually
 beta2 = 0.95
 
