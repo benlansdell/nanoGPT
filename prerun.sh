@@ -3,4 +3,4 @@ cp .gitconfig /root/.gitconfig
 source aliases.sh
 
 apt update
-apt install tmux
+apt -y install tmux
