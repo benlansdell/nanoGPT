@@ -110,7 +110,7 @@ class MLP_Final(nn.Module):
         x = self.c_fc(x)
         x = new_gelu(x)
         x = self.c_proj(x)
-        x = self.dropout(x)
+        #x = self.dropout(x)
         return x
 
 class Block(nn.Module):
@@ -170,10 +170,7 @@ class GPTWSI(nn.Module):
         else:
             self.flat_op = torch.flatten
             self.flat_kwargs = {'start_dim': 1}
-            if self.config.n_linear_layers > 1:
-                self.lm_head = MLP_Final(config.n_embd*config.block_size, config.vocab_size, config)
-            else:
-                self.lm_head = nn.Linear(config.n_embd*config.block_size, config.vocab_size, bias=False)
+            self.lm_head = nn.Linear(config.n_embd*config.block_size, config.vocab_size, bias=False)
 
         # init all weights
         self.apply(self._init_weights)

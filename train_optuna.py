@@ -83,7 +83,7 @@ compile = True # use PyTorch 2.0 to compile the model to be faster
 #BL
 n_classes = 17
 search_id = 1
-n_trials = 1
+n_trials = 100
 
 # -----------------------------------------------------------------------------
 config_keys = [k for k,v in globals().items() if not k.startswith('_') and isinstance(v, (int, float, bool, str))]
@@ -108,7 +108,7 @@ def load_wsi_features(data_dir):
     
 def suggest_params(trial):
     block_size = trial.suggest_categorical('block_size', [64, 128, 256, 512])
-    n_layer = trial.suggest_int('n_layer', 4, 12)
+    n_layer = trial.suggest_int('n_layer', 4, 10)
     dropout = trial.suggest_float('dropout', 0.0, 0.2)
     weight_decay = trial.suggest_float('weight_decay', 0.0, 0.2) 
     learning_rate = trial.suggest_float('learning_rate', 1e-6, 1e-3, log = True)
